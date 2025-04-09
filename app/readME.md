@@ -1,16 +1,3 @@
-# Salto - AI-Powered Data Explorer
-
-Salto is a Python Flask application that provides an AI-powered business data explorer using Azure OpenAI integration. It allows users to upload, manage, and analyze business data through natural language conversations.
-
-## Features
-
-- 💬 **Conversational Interface**: Ask questions about your business data in natural language
-- 🧠 **Azure OpenAI Integration**: Uses GPT models via Azure OpenAI to analyze and interpret data
-- 📊 **Business Data Management**: Upload, view, and manage different data sets
-- 🔄 **Multi-Instance Support**: Create separate instances for different businesses or projects
-- 👤 **Admin Controls**: Secure admin interface for configuration and management
-- 🚀 **Demo Data Generation**: Quick-start with AI-generated sample business data
-
 ## Requirements
 
 - Python 3.9+
