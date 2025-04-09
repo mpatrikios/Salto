@@ -33,13 +33,13 @@ class ChatSession(BaseModel):
         if not data:
             return None
             
-            return ChatSession(
-                id=str(data['_id']),
-                title=data.get('title', 'New Salto Chat'),
-                created_at=data.get('created_at'),
-                last_message_at=data.get('last_message_at'),
-                instance_name=data.get('instance_name', 'Default Instance')
-            )
+        return ChatSession(
+            id=str(data['_id']),
+            title=data.get('title', 'New Salto Chat'),
+            created_at=data.get('created_at', int(datetime.now().timestamp() * 1000)),
+            last_message_at=data.get('last_message_at', int(datetime.now().timestamp() * 1000)),
+            instance_name=data.get('instance_name', 'Default Instance')
+        )
     
     def to_mongo(self) -> Dict[str, Any]:
         """
