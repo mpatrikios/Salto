@@ -28,12 +28,20 @@
    cp .env.example .env
    ```
 
-5. Update the `.env` file with your settings:
-   - Set your MongoDB connection string
-   - Add your Azure OpenAI API key and endpoint
-   - Update the admin password
+5. Set up MongoDB connection
+   ```
+   # Install Homebrew (if not already installed)
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   
+   # Install MongoDB
+   brew tap mongodb/brew
+   brew install mongodb-community
+   
+   # Start MongoDB service
+   brew services start mongodb-community
+   ```
 
-6. To run application
+7. To run application
     ```bash
    python run.py
    ```
