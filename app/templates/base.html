@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Salto - AI Data Explorer{% endblock %}</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Markdown renderer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, #2563eb, #0d9488);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .prose p {
+            margin-bottom: 0.75rem;
+        }
+        
+        .prose ul, .prose ol {
+            margin-top: 0.75rem;
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+        }
+        
+        .prose ul {
+            list-style-type: disc;
+        }
+        
+        .prose ol {
+            list-style-type: decimal;
+        }
+        
+        .prose table {
+            border-collapse: collapse;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            width: 100%;
+        }
+        
+        .prose th, .prose td {
+            border: 1px solid #e5e7eb;
+            padding: 0.5rem;
+        }
+        
+        .prose th {
+            background-color: #f9fafb;
+            font-weight: 600;
+        }
+    </style>
+    
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-slate-50 min-h-screen">
+    {% block content %}{% endblock %}
+    
+    {% block scripts %}
+    <script>
+        // Function to render markdown content
+        function renderMarkdown() {
+            document.querySelectorAll('.markdown-content').forEach(element => {
+                element.innerHTML = marked.parse(element.textContent);
+            });
+        }
+        
+        // Call renderMarkdown on page load
+        document.addEventListener('DOMContentLoaded', renderMarkdown);
+    </script>
+    {% endblock %}
+</body>
+</html>

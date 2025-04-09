@@ -1,0 +1,543 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="flex h-screen">
+    <!-- Sidebar -->
+    <div id="sidebar" class="w-64 bg-slate-800 text-white flex flex-col h-screen">
+        <div class="p-4 border-b border-slate-700 flex justify-between items-center">
+            <h2 class="font-bold text-lg truncate">{{ instance_name }}</h2>
+            <button id="newChatBtn" class="p-1 rounded-full hover:bg-slate-700" title="New Chat">
+                <i class="fas fa-plus"></i>
+            </button>
+        </div>
+        
+        <div class="overflow-y-auto flex-grow">
+            {% if chats %}
+                <ul id="chatList">
+                    {% for chat in chats %}
+                        <li class="border-b border-slate-700">
+                            <div class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-700 {% if active_chat and active_chat.id == chat.id %}bg-slate-700{% endif %}"
+                                 data-chat-id="{{ chat.id }}">
+                                <div class="overflow-hidden">
+                                    <div class="font-medium truncate">{{ chat.title }}</div>
+                                    <div class="text-xs text-slate-400">{{ chat.created_at|format_date }}</div>
+                                </div>
+                                <button class="delete-chat-btn p-1 rounded-full hover:bg-slate-600 text-slate-400 hover:text-white"
+                                        data-chat-id="{{ chat.id }}" title="Delete Chat">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="p-4 text-slate-400 text-sm text-center">
+                    No chat history for this instance
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="p-3 border-t border-slate-700 space-y-2">
+            <button id="settingsBtn" class="w-full py-2 text-sm bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center gap-2">
+                <i class="fas fa-cog"></i>
+                Instance Settings
+            </button>
+            
+            {% if session.get('is_admin') %}
+                <a href="{{ url_for('admin.logout') }}" class="w-full py-2 text-sm bg-red-700 hover:bg-red-600 rounded flex items-center justify-center gap-2">
+                    Exit Admin Mode
+                </a>
+            {% else %}
+                <a href="{{ url_for('admin.login') }}" class="w-full py-2 text-sm bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center gap-2">
+                    Admin Login
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center">
+            <button id="sidebarToggle" class="p-2 rounded hover:bg-slate-100 mr-2">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="flex-1 text-center">
+                <h1 class="text-2xl font-bold gradient-text">Salto</h1>
+                <div class="text-sm text-slate-500">
+                    Instance: {{ instance_name }}
+                    {% if session.get('is_admin') %}
+                        <span class="text-red-500 font-medium">(Admin)</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button id="loadDemoBtn" class="px-3 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-sm transition-colors">
+                    Load Demo Data
+                </button>
+                
+                {% if session.get('is_admin') %}
+                    <button id="clearDataBtn" class="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm transition-colors">
+                        Clear Instance Data
+                    </button>
+                {% endif %}
+            </div>
+        </header>
+        
+        <!-- Chat Area -->
+        <div id="chatArea" class="flex-grow overflow-y-auto p-4 bg-slate-50">
+            <div class="max-w-3xl mx-auto">
+                {% if not active_chat or not messages %}
+                    <div class="text-center text-slate-500 italic p-8 bg-white rounded-lg shadow-sm border border-slate-200">
+                        <p class="mb-4">Ask Salto a question about your business data to get started.</p>
+                        <p class="text-sm text-slate-400 italic">Your AI-powered business data explorer with Azure OpenAI integration</p>
+                    </div>
+                {% else %}
+                    <div id="messageContainer" class="space-y-4">
+                        {% for message in messages %}
+                            <div class="p-4 rounded-lg {% if message.role == 'user' %}bg-blue-50 border border-blue-200 text-slate-800{% else %}bg-gradient-to-r from-blue-50 to-teal-50 border border-teal-200{% endif %}">
+                                <div class="font-semibold mb-1 flex items-center">
+                                    {% if message.role == 'user' %}
+                                        <span>You</span>
+                                    {% else %}
+                                        <span>Salto</span>
+                                        <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Powered by Azure OpenAI</span>
+                                    {% endif %}
+                                </div>
+                                <div class="prose max-w-none markdown-content">
+                                    {{ message.content }}
+                                </div>
+                                <div class="text-xs text-slate-400 mt-2">
+                                    {{ message.timestamp|format_date }}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Input Area -->
+        <div class="p-4 bg-white border-t border-slate-200">
+            <form id="messageForm" class="max-w-3xl mx-auto flex gap-2">
+                <input
+                    id="messageInput"
+                    type="text"
+                    placeholder="Ask Salto about your business data..."
+                    class="flex-grow p-3 rounded-lg border-2 border-blue-300 focus:border-blue-500 focus:outline-none"
+                    {% if not active_chat %}disabled{% endif %}
+                >
+                <button
+                    type="submit"
+                    class="p-3 rounded-lg bg-gradient-to-r from-blue-600 to-teal-500 text-white font-semibold disabled:opacity-50"
+                    {% if not active_chat %}disabled{% endif %}
+                >
+                    Ask Salto
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+        <h3 class="text-xl font-bold mb-4">Salto Instance Settings</h3>
+        {% if session.get('is_admin') %}
+            <form id="settingsForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Instance Name</label>
+                    <input
+                        type="text"
+                        id="instanceName"
+                        value="{{ instance_name }}"
+                        placeholder="Enter instance name"
+                        class="w-full p-2 border rounded"
+                    >
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Azure OpenAI API Key</label>
+                    <input
+                        type="password"
+                        id="apiKey"
+                        placeholder="Enter Azure OpenAI API key"
+                        class="w-full p-2 border rounded"
+                    >
+                    <p class="text-xs text-slate-500 mt-1">
+                        Your API key is stored securely and never shared with third parties.
+                    </p>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Azure OpenAI Endpoint</label>
+                    <input
+                        type="text"
+                        id="apiEndpoint"
+                        placeholder="https://your-resource.openai.azure.com/"
+                        class="w-full p-2 border rounded"
+                    >
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Deployment Name</label>
+                    <input
+                        type="text"
+                        id="deploymentName"
+                        placeholder="gpt-4"
+                        class="w-full p-2 border rounded"
+                    >
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button 
+                        type="button"
+                        id="closeSettingsBtn"
+                        class="px-4 py-2 border border-slate-300 rounded hover:bg-slate-100"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                        Save Settings
+                    </button>
+                </div>
+            </form>
+        {% else %}
+            <div class="text-center py-6">
+                <p class="text-slate-600 mb-4">
+                    Only administrators can change Salto instance settings. Please contact your administrator.
+                </p>
+                <button 
+                    id="closeSettingsBtn"
+                    class="px-4 py-2 border border-slate-300 rounded hover:bg-slate-100"
+                >
+                    Close
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-xl">
+        <div class="flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div id="loadingMessage">Loading...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // DOM elements
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const newChatBtn = document.getElementById('newChatBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const loadDemoBtn = document.getElementById('loadDemoBtn');
+        const clearDataBtn = document.getElementById('clearDataBtn');
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const chatArea = document.getElementById('chatArea');
+        const messageContainer = document.getElementById('messageContainer');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingMessage = document.getElementById('loadingMessage');
+        
+        let activeChatId = '{{ active_chat.id if active_chat else "" }}';
+        
+        // Toggle sidebar
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
+        });
+        
+        // Settings modal
+        settingsBtn.addEventListener('click', () => {
+            settingsModal.classList.remove('hidden');
+        });
+        
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+        
+        // Save settings
+        if (document.getElementById('settingsForm')) {
+            document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                showLoading('Saving settings...');
+                
+                const instanceName = document.getElementById('instanceName').value;
+                const apiKey = document.getElementById('apiKey').value;
+                const apiEndpoint = document.getElementById('apiEndpoint').value;
+                const deploymentName = document.getElementById('deploymentName').value;
+                
+                try {
+                    const response = await fetch('/admin/settings', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            'instance_name': instanceName,
+                            'api_key': apiKey,
+                            'api_endpoint': apiEndpoint,
+                            'deployment': deploymentName
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to save settings.');
+                    }
+                } catch (error) {
+                    console.error('Error saving settings:', error);
+                    alert('An error occurred while saving settings.');
+                } finally {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // Create new chat
+        newChatBtn.addEventListener('click', async () => {
+            showLoading('Creating new chat...');
+            
+            try {
+                const response = await fetch('/chat/create', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    window.location.href = `/chat/${data.id}`;
+                } else {
+                    alert('Failed to create new chat.');
+                }
+            } catch (error) {
+                console.error('Error creating chat:', error);
+                alert('An error occurred while creating a new chat.');
+            } finally {
+                hideLoading();
+            }
+        });
+        
+        // Select chat
+        document.querySelectorAll('#chatList [data-chat-id]').forEach(chatElement => {
+            chatElement.addEventListener('click', function(e) {
+                if (!e.target.closest('.delete-chat-btn')) {
+                    const chatId = this.getAttribute('data-chat-id');
+                    window.location.href = `/chat/${chatId}`;
+                }
+            });
+        });
+        
+        // Delete chat
+        document.querySelectorAll('.delete-chat-btn').forEach(button => {
+            button.addEventListener('click', async function(e) {
+                e.stopPropagation();
+                
+                if (!confirm('Are you sure you want to delete this chat?')) {
+                    return;
+                }
+                
+                const chatId = this.getAttribute('data-chat-id');
+                showLoading('Deleting chat...');
+                
+                try {
+                    const response = await fetch(`/chat/${chatId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        if (chatId === activeChatId) {
+                            window.location.href = '/chat/';
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        alert('Failed to delete chat.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting chat:', error);
+                    alert('An error occurred while deleting the chat.');
+                } finally {
+                    hideLoading();
+                }
+            });
+        });
+        
+        // Load demo data
+        loadDemoBtn.addEventListener('click', async () => {
+            showLoading('Generating demo data...');
+            
+            try {
+                const response = await fetch('/data/generate-demo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ chat_id: activeChatId })
+                });
+                
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    alert(`Failed to generate demo data: ${errorData.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error generating demo data:', error);
+                alert('An error occurred while generating demo data.');
+            } finally {
+                hideLoading();
+            }
+        });
+        
+        // Clear data
+        if (clearDataBtn) {
+            clearDataBtn.addEventListener('click', async () => {
+                if (!confirm('Are you sure you want to delete ALL data for this instance? This cannot be undone.')) {
+                    return;
+                }
+                
+                showLoading('Clearing instance data...');
+                
+                try {
+                    const response = await fetch('/admin/clear-data', {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        window.location.href = '/chat/';
+                    } else {
+                        alert('Failed to clear instance data.');
+                    }
+                } catch (error) {
+                    console.error('Error clearing data:', error);
+                    alert('An error occurred while clearing instance data.');
+                } finally {
+                    hideLoading();
+                }
+            });
+        }
+        
+        // Send message
+        messageForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const message = messageInput.value.trim();
+            if (!message || !activeChatId) {
+                return;
+            }
+            
+            messageInput.value = '';
+            messageInput.disabled = true;
+            
+            // Immediately add user message to UI
+            appendMessage('user', message);
+            
+            // Show loading indicator in the chat
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.className = 'p-4 rounded-lg bg-gradient-to-r from-blue-50 to-teal-50 border border-teal-200 animate-pulse';
+            loadingIndicator.innerHTML = `
+                <div class="font-semibold mb-1 flex items-center">
+                    <span>Salto</span>
+                    <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Powered by Azure OpenAI</span>
+                </div>
+                <div>Analyzing your data...</div>
+            `;
+            messageContainer.appendChild(loadingIndicator);
+            scrollToBottom();
+            
+            try {
+                const response = await fetch(`/chat/${activeChatId}/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message })
+                });
+                
+                // Remove loading indicator
+                messageContainer.removeChild(loadingIndicator);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    appendMessage('assistant', data.content);
+                } else {
+                    const errorData = await response.json();
+                    appendMessage('assistant', `I'm sorry, I couldn't process your query. ${errorData.error || 'Please try again later.'} - Salto`);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                // Remove loading indicator
+                messageContainer.removeChild(loadingIndicator);
+                appendMessage('assistant', "I'm sorry, I couldn't connect to the server. Please check your connection and try again. - Salto");
+            } finally {
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        });
+        
+        // Utility functions
+        function appendMessage(role, content) {
+            if (!messageContainer) {
+                const chatArea = document.getElementById('chatArea');
+                messageContainer = document.createElement('div');
+                messageContainer.id = 'messageContainer';
+                messageContainer.className = 'space-y-4';
+                
+                // Clear placeholder
+                chatArea.querySelector('.max-w-3xl').innerHTML = '';
+                chatArea.querySelector('.max-w-3xl').appendChild(messageContainer);
+            }
+            
+            const timestamp = new Date().toLocaleString();
+            const messageElement = document.createElement('div');
+            messageElement.className = `p-4 rounded-lg ${role === 'user' ? 'bg-blue-50 border border-blue-200 text-slate-800' : 'bg-gradient-to-r from-blue-50 to-teal-50 border border-teal-200'}`;
+            
+            messageElement.innerHTML = `
+                <div class="font-semibold mb-1 flex items-center">
+                    ${role === 'user' ? '<span>You</span>' : `
+                        <span>Salto</span>
+                        <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Powered by Azure OpenAI</span>
+                    `}
+                </div>
+                <div class="prose max-w-none markdown-content">
+                    ${content}
+                </div>
+                <div class="text-xs text-slate-400 mt-2">
+                    ${timestamp}
+                </div>
+            `;
+            
+            messageContainer.appendChild(messageElement);
+            renderMarkdown();
+            scrollToBottom();
+        }
+        
+        function scrollToBottom() {
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+        
+        function showLoading(message = 'Loading...') {
+            loadingMessage.textContent = message;
+            loadingOverlay.classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+        
+        // Initialize
+        scrollToBottom();
+        messageInput.focus();
+    });
+</script>
+{% endblock %}

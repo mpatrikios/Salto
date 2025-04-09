@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Salto Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+    <!-- Admin Header -->
+    <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center">
+        <div class="flex items-center">
+            <a href="{{ url_for('chat.index') }}" class="p-2 rounded hover:bg-slate-100 mr-2">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-bold gradient-text">Salto Admin</h1>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.logout') }}" class="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm transition-colors">
+                Exit Admin Mode
+            </a>
+        </div>
+    </header>
+    
+    <!-- Admin Content -->
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Settings Card -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-slate-800">
+                        <i class="fas fa-cog text-blue-500 mr-2"></i>
+                        Settings
+                    </h2>
+                </div>
+                <p class="text-slate-600 mb-4">Configure your Salto instance and API settings.</p>
+                <a href="{{ url_for('admin.settings') }}" class="block w-full py-2 bg-blue-600 text-white rounded text-center hover:bg-blue-700">
+                    Manage Settings
+                </a>
+            </div>
+            
+            <!-- Data Management Card -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-slate-800">
+                        <i class="fas fa-database text-blue-500 mr-2"></i>
+                        Data Management
+                    </h2>
+                </div>
+                <p class="text-slate-600 mb-4">Manage business data, generate demo data, or reset your instance.</p>
+                <div class="flex space-x-3">
+                    <button id="loadDemoDataBtn" class="flex-1 py-2 bg-blue-600 text-white rounded text-center hover:bg-blue-700">
+                        Load Demo Data
+                    </button>
+                    <button id="clearDataBtn" class="flex-1 py-2 bg-red-600 text-white rounded text-center hover:bg-red-700">
+                        Clear All Data
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Information -->
+        <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-slate-800 mb-4">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                System Information
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium text-slate-700 mb-2">Instance Details</h3>
+                    <table class="w-full text-sm">
+                        <tr>
+                            <td class="py-2 text-slate-500">Instance Name:</td>
+                            <td class="py-2 font-medium">{{ session.get('instance_name', 'Default Instance') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-slate-500">Environment:</td>
+                            <td class="py-2 font-medium">{{ config.get('FLASK_ENV', 'development') }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-slate-700 mb-2">API Configuration</h3>
+                    <table class="w-full text-sm">
+                        <tr>
+                            <td class="py-2 text-slate-500">API Status:</td>
+                            <td class="py-2 font-medium">
+                                {% if config.get('AZURE_OPENAI_API_KEY') %}
+                                    <span class="text-green-600">
+                                        <i class="fas fa-check-circle"></i> Configured
+                                    </span>
+                                {% else %}
+                                    <span class="text-red-600">
+                                        <i class="fas fa-times-circle"></i> Not Configured
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-slate-500">Deployment:</td>
+                            <td class="py-2 font-medium">{{ config.get('AZURE_OPENAI_DEPLOYMENT', 'Not set') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-lg shadow-xl">
+        <div class="flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <div id="loadingMessage">Loading...</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadDemoDataBtn = document.getElementById('loadDemoDataBtn');
+        const clearDataBtn = document.getElementById('clearDataBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingMessage = document.getElementById('loadingMessage');
+        
+        // Load demo data
+        loadDemoDataBtn.addEventListener('click', async () => {
+            showLoading('Generating demo data...');
+            
+            try {
+                const response = await fetch('/data/generate-demo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (response.ok) {
+                    alert('Demo data successfully generated!');
+                    window.location.href = '/chat/';
+                } else {
+                    const errorData = await response.json();
+                    alert(`Failed to generate demo data: ${errorData.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error generating demo data:', error);
+                alert('An error occurred while generating demo data.');
+            } finally {
+                hideLoading();
+            }
+        });
+        
+        // Clear data
+        clearDataBtn.addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to delete ALL data? This cannot be undone.')) {
+                return;
+            }
+            
+            showLoading('Clearing all data...');
+            
+            try {
+                const response = await fetch('/admin/clear-data', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert('All data has been cleared!');
+                    window.location.href = '/chat/';
+                } else {
+                    alert('Failed to clear data.');
+                }
+            } catch (error) {
+                console.error('Error clearing data:', error);
+                alert('An error occurred while clearing data.');
+            } finally {
+                hideLoading();
+            }
+        });
+        
+        function showLoading(message = 'Loading...') {
+            loadingMessage.textContent = message;
+            loadingOverlay.classList.remove('hidden');
+        }
+        
+        function hideLoading() {
+            loadingOverlay.classList.add('hidden');
+        }
+    });
+</script>
+{% endblock %}

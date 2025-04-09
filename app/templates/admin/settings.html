@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Salto Admin Settings{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50">
+    <!-- Admin Header -->
+    <header class="bg-white border-b border-slate-200 p-4 flex justify-between items-center">
+        <div class="flex items-center">
+            <a href="{{ url_for('admin.dashboard') }}" class="p-2 rounded hover:bg-slate-100 mr-2">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-2xl font-bold gradient-text">Salto Settings</h1>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.logout') }}" class="px-3 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 text-sm transition-colors">
+                Exit Admin Mode
+            </a>
+        </div>
+    </header>
+    
+    <!-- Settings Content -->
+    <div class="max-w-3xl mx-auto p-6">
+        {% if request.args.get('success') %}
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+                Settings saved successfully!
+            </div>
+        {% endif %}
+        
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-6">Instance Configuration</h2>
+            
+            <form method="POST" action="{{ url_for('admin.settings') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-6">
+                    <label for="instance_name" class="block text-sm font-medium text-gray-700 mb-1">Instance Name</label>
+                    <input
+                        type="text"
+                        id="instance_name"
+                        name="instance_name"
+                        value="{{ instance_name }}"
+                        class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter instance name"
+                        required
+                    >
+                    <p class="text-xs text-slate-500 mt-1">
+                        This name identifies your Salto instance and separates its data from other instances.
+                    </p>
+                </div>
+                
+                <h2 class="text-xl font-semibold mb-6 pt-6 border-t border-gray-200">Azure OpenAI Configuration</h2>
+                
+                <div class="mb-6">
+                    <label for="api_key" class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                    <input
+                        type="password"
+                        id="api_key"
+                        name="api_key"
+                        value="{{ api_key }}"
+                        class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter Azure OpenAI API key"
+                        required
+                    >
+                    <p class="text-xs text-slate-500 mt-1">
+                        Your Azure OpenAI API key is stored securely and never shared with third parties.
+                    </p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="api_endpoint" class="block text-sm font-medium text-gray-700 mb-1">API Endpoint</label>
+                    <input
+                        type="text"
+                        id="api_endpoint"
+                        name="api_endpoint"
+                        value="{{ api_endpoint }}"
+                        class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://your-resource.openai.azure.com/"
+                        required
+                    >
+                    <p class="text-xs text-slate-500 mt-1">
+                        Your Azure OpenAI resource endpoint URL.
+                    </p>
+                </div>
+                
+                <div class="mb-6">
+                    <label for="deployment" class="block text-sm font-medium text-gray-700 mb-1">Model Deployment Name</label>
+                    <input
+                        type="text"
+                        id="deployment"
+                        name="deployment"
+                        value="{{ deployment }}"
+                        class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="gpt-4"
+                        required
+                    >
+                    <p class="text-xs text-slate-500 mt-1">
+                        The deployment name for your Azure OpenAI model (e.g., gpt-4, gpt-35-turbo).
+                    </p>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button 
+                        type="submit"
+                        class="px-6 py-2 bg-gradient-to-r from-blue-600 to-teal-500 text-white rounded-md hover:from-blue-700 hover:to-teal-600"
+                    >
+                        Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
