@@ -32,3 +32,8 @@
    - Set your MongoDB connection string
    - Add your Azure OpenAI API key and endpoint
    - Update the admin password
+
+6. To run application
+    ```bash
+   python run.py
+   ```
